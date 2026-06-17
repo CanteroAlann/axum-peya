@@ -1,0 +1,1 @@
+pub mod geolocable_repository;

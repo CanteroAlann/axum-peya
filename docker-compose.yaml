@@ -1,0 +1,49 @@
+services:
+  # --- NODO PRIMARIO (MASTER) ---
+  postgres-primario:
+    image: postgis/postgis:16-3.4
+    container_name: postgres_primario
+    environment:
+      POSTGRES_USER: alan
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: comida_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - primario_data:/var/lib/postgresql/data
+    # Usamos este truco nativo de Docker para meter la línea en pg_hba.conf de forma segura
+    entrypoint: |
+      bash -c "
+      echo 'echo \"host replication alan all trust\" >> /var/lib/postgresql/data/pg_hba.conf' > /docker-entrypoint-initdb.d/setup-replication.sh
+      exec docker-entrypoint.sh postgres -c wal_level=replica -c max_wal_senders=5 -c max_replication_slots=5
+      "
+
+  # --- NODO SECUNDARIO (REPLICA / STANDBY) ---
+  postgres-replica:
+    image: postgis/postgis:16-3.4
+    container_name: postgres_replica
+    environment:
+      POSTGRES_USER: alan
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: comida_db
+    ports:
+      - "5433:5432"
+    depends_on:
+      - postgres-primario
+    volumes:
+      - replica_data:/var/lib/postgresql/data
+    entrypoint: |
+      bash -c "
+      if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+        echo 'Clonando base de datos principal...'
+        until pg_basebackup -h postgres-primario -D /var/lib/postgresql/data -U alan -v -P -R -X stream; do
+          echo 'Esperando al nodo primario...'
+          sleep 1
+        done
+      fi
+      exec docker-entrypoint.sh postgres
+      "
+
+volumes:
+  primario_data:
+  replica_data:
