@@ -1,12 +1,10 @@
 use axum::{routing::get, Router, extract::State};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use crate::peer_client::send_heartbeat;
 use crate::infrastructure::postgres_db::Database;
 use crate::repositories::geolocable_repository::GeocableRepository;
 
 async fn hello() -> &'static str {
-    self::send_heartbeat().await.expect("Failed to send heartbeat");
     "Hello world from axum!"
 }
 

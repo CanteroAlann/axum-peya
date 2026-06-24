@@ -44,6 +44,65 @@ services:
       exec docker-entrypoint.sh postgres
       "
 
+# --- INSTANCIAS DE LA APLICACIÓN EN RUST ---
+
+  app-node-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rust_app_node_1
+    ports:
+      - "3001:3000"
+      - "50052:50051" # Puerto para comunicación entre nodos
+    environment:
+      - PEER_ID=1
+      - DATABASE_LEADER_URL=postgres://alan:password@postgres-primario:5432/comida_db
+      - DATABASE_FOLLOWER_URL=postgres://alan:password@postgres-replica:5432/comida_db
+      - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
+    volumes:
+      - ./migrations:/app/migrations
+    depends_on:
+      - postgres-primario
+      - postgres-replica
+
+  app-node-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rust_app_node_2
+    ports:
+      - "3002:3000"
+      - "50053:50051" # Puerto para comunicación entre nodos
+    environment:
+      - PEER_ID=2
+      - DATABASE_LEADER_URL=postgres://alan:password@postgres-primario:5432/comida_db
+      - DATABASE_FOLLOWER_URL=postgres://alan:password@postgres-replica:5432/comida_db
+      - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
+    volumes:
+      - ./migrations:/app/migrations
+    depends_on:
+      - postgres-primario
+      - postgres-replica
+
+  app-node-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rust_app_node_3
+    ports:
+      - "3003:3000"
+      - "50054:50051" # Puerto para comunicación entre nodos
+    environment:
+      - PEER_ID=3
+      - DATABASE_LEADER_URL=postgres://alan:password@postgres-primario:5432/comida_db
+      - DATABASE_FOLLOWER_URL=postgres://alan:password@postgres-replica:5432/comida_db
+      - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
+    volumes:
+      - ./migrations:/app/migrations
+    depends_on:
+      - postgres-primario
+      - postgres-replica
+
 volumes:
   primario_data:
   replica_data:

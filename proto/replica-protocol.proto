@@ -3,14 +3,28 @@ syntax="proto3";
 package replica_protocol;
 
 
-service HeartbeatService {
+service ElectionService {
     rpc SendHeartbeat (Heartbeat) returns (Ack);
+
+    rpc SendElection (Election) returns (Ack);
+
+    rpc SendCoordinator (Coordinator) returns (Ack);
 }
 
 
 message Heartbeat {
     string replica_id = 1;
 }
+
+message Election {
+    string replica_id = 1;
+}
+
+message Coordinator {
+    string replica_id = 1;
+}
+
+
 
 message Ack {
     string message = 1;
