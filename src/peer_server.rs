@@ -6,6 +6,8 @@ use replicaprotocol::election_service_server::{ElectionService, ElectionServiceS
 use replicaprotocol::{Ack, Heartbeat};
 use tonic::{transport::Server, Request as TonicRequest, Response as TonicResponse, Status};
 use tokio::sync::mpsc;
+use std::sync::{Arc, Mutex};
+use crate::app_state::AppState;
 
 #[derive(Debug)]
 struct PeerServer{
@@ -42,7 +44,8 @@ impl ElectionService for PeerServer{
     }
 }
 
-pub async fn start_peer_server(id: u32, server_tx: mpsc::Sender<u32>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_peer_server(app_state: Arc<Mutex<AppState>>, server_tx: mpsc::Sender<u32>) -> Result<(), Box<dyn std::error::Error>> {
+    let id = app_state.lock().unwrap().get_peer_id();
     let peer_server = PeerServer { id, server_tx };
     let addr = SocketAddr::from(([0, 0, 0, 0], 50051));
     println!("Peer server {} listening on {}", id, addr);

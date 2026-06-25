@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use tonic::transport::Channel;
 use crate::Result;
 
+// This struct manages the gRPC clients for each peer in the cluster and handles the election process.
 pub struct ClientServer {
     clients: HashMap<u32, ElectionServiceClient<Channel>>,
     peer_id: u32,
@@ -36,6 +37,10 @@ impl ClientServer {
         ClientServer   { clients, peer_id: current_id, leader_id: None }
     }
 
+    fn im_a_leader(&self) -> bool {
+        self.leader_id == Some(self.peer_id)
+    }
+
     pub async fn start(
         &mut self, 
         app_state: Arc<Mutex<AppState>>,
@@ -47,6 +52,7 @@ impl ClientServer {
 
         let mut heartbeat_frecuence = tokio::time::interval(tokio::time::Duration::from_secs(3));
 
+        // Event loop that listens for leader updates and sends heartbeats to the current leader.
         loop {
             tokio::select! {
                 Some(new_leader) = server_rx.recv() => {
@@ -60,10 +66,9 @@ impl ClientServer {
                 }
 
                 _ = heartbeat_frecuence.tick() => {
-                    if self.leader_id != Some(self.peer_id) {
+                    if !self.im_a_leader() {
                         if let Some(target_leader) = self.leader_id {
-                            if target_leader != self.peer_id {
-                                if let Err(e) = self.send_heartbeat_to_leader(target_leader).await {
+                                if let Err(e) = self.send_heartbeat_to_leader().await {
                                     println!("Heartbeat failed to leader {}: {}", target_leader, e);
                                     // [ALGORITMO BULLY]: Si falla el líder, deberíamos disparar otra elección
                                     println!("Leader dead. Triggering new election...");
@@ -75,7 +80,10 @@ impl ClientServer {
                 }
             }
         }
-    }
+    
+    // Starts an election process by sending election messages to all higher-ID nodes.
+    // If no higher-ID node responds, it declares itself the leader 
+    // and sends a coordinator message to all nodes.
 
     async fn start_election(&mut self, app_state: Arc<Mutex<AppState>>) -> Result<()> {
         let mut retries = 0;
@@ -121,19 +129,30 @@ impl ClientServer {
         }
         Ok(())
     }
-    async fn send_heartbeat_to_leader(&mut self, leader_id: u32) -> Result<()> {
-        if let Some(client) = self.clients.get_mut(&leader_id) {
-            let request = tonic::Request::new(replicaprotocol::Heartbeat {
+    async fn send_heartbeat_to_leader(&mut self) -> Result<()> {
+        if let Some(client) = self.clients.get_mut(&self.leader_id.unwrap_or(0)) {
+            let mut retries = 0;
+            while retries < 3 {
+                let request = tonic::Request::new(replicaprotocol::Heartbeat {
                 replica_id: self.peer_id.to_string(),
-            });
-            match client.send_heartbeat(request).await {
-                Ok(response) => println!("Received heartbeat response from leader {}: {:?}", leader_id, response.into_inner().message),
-                Err(e) => println!("Error sending heartbeat to leader {}: {:?}", leader_id, e),
+                });
+                match client.send_heartbeat(request).await {
+                    Ok(response) => {
+                        println!("Received heartbeat response from leader {}: {:?}", self.leader_id.unwrap_or(0), response.into_inner().message);
+                        return Ok(())
+                    },
+                    Err(e) => {
+                        println!("Error sending heartbeat to leader {}: {:?}", self.leader_id.unwrap_or(0), e);
+                        println!("Retrying heartbeat to leader... Attempt {}/3", retries + 1);
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                        retries += 1;
+                    },
+                }
             }
         } else {
-            println!("Leader with ID {} not found in clients.", leader_id);
+            println!("Leader with ID {} not found in clients.", self.leader_id.unwrap_or(0));
         }
-        Ok(())
+        Err("Failed to send heartbeat to leader after 3 attempts.".into())
     }
-
 }
+

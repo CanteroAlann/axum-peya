@@ -1,8 +1,9 @@
 use axum::{routing::get, Router, extract::State};
 use std::net::SocketAddr;
-use std::sync::Arc;
 use crate::infrastructure::postgres_db::Database;
 use crate::repositories::geolocable_repository::GeocableRepository;
+use crate::app_state::AppState;
+use std::sync::{Arc, Mutex};
 
 async fn hello() -> &'static str {
     "Hello world from axum!"
@@ -21,12 +22,15 @@ async fn hello_with_name(State(db): State<Arc<Database>>, name: String) -> Strin
 }
 
 
-pub async fn start_web_server(db : Database) {
-    let database = Arc::new(db);
+pub async fn start_web_server(app_state: Arc<Mutex<AppState>>) {
+    let database = {
+        let state = app_state.lock().unwrap();
+        state.get_database().clone()
+    };
     let app = Router::new()
     .route("/", get(hello))
     .route("/hello/:name", get(hello_with_name))
-    .with_state(database);
+    .with_state(Arc::new(database));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     let listener = tokio::net::TcpListener::bind(addr)
