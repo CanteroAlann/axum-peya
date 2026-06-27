@@ -1,0 +1,28 @@
+.
+├── build.rs
+├── Cargo.lock
+├── Cargo.toml
+├── docker-compose.yaml
+├── Dockerfile
+├── migrations
+│   └── 20260612002847_initial_squema.sql
+├── project-structure.txt
+├── proto
+│   └── replica-protocol.proto
+├── README.md
+├── src
+│   ├── app_state.rs
+│   ├── entities.rs
+│   ├── infrastructure
+│   ├── main.rs
+│   ├── mod.rs
+│   ├── peer_client.rs
+│   ├── peer_server.rs
+│   ├── repositories
+│   └── web_server.rs
+└── target
+    ├── CACHEDIR.TAG
+    ├── debug
+    └── flycheck0
+
+9 directories, 17 files

@@ -17,11 +17,6 @@ impl Database {
         .await?;
     Ok(Self { pool })
     }
-
-    pub async fn run_migrations(&self) -> Result<(), sqlx::Error> {
-        sqlx::migrate!("./migrations").run(&self.pool).await?;
-        Ok(())
-    }
 }
 
 #[axum::async_trait]

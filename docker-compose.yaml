@@ -1,49 +1,21 @@
 services:
-  # --- NODO PRIMARIO (MASTER) ---
-  postgres-primario:
-    image: postgis/postgis:16-3.4
-    container_name: postgres_primario
-    environment:
-      POSTGRES_USER: alan
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: comida_db
+  # --- REDIS MASTER (Para escrituras del líder) ---
+  redis-master:
+    image: redis:7-alpine
+    container_name: redis_master
     ports:
-      - "5432:5432"
-    volumes:
-      - primario_data:/var/lib/postgresql/data
-    # Usamos este truco nativo de Docker para meter la línea en pg_hba.conf de forma segura
-    entrypoint: |
-      bash -c "
-      echo 'echo \"host replication alan all trust\" >> /var/lib/postgresql/data/pg_hba.conf' > /docker-entrypoint-initdb.d/setup-replication.sh
-      exec docker-entrypoint.sh postgres -c wal_level=replica -c max_wal_senders=5 -c max_replication_slots=5
-      "
+      - "6379:6379"
+    command: redis-server --appendonly yes
 
-  # --- NODO SECUNDARIO (REPLICA / STANDBY) ---
-  postgres-replica:
-    image: postgis/postgis:16-3.4
-    container_name: postgres_replica
-    environment:
-      POSTGRES_USER: alan
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: comida_db
+  # --- REDIS REPLICA (Para lecturas de cualquier nodo) ---
+  redis-replica:
+    image: redis:7-alpine
+    container_name: redis_replica
     ports:
-      - "5433:5432"
+      - "6380:6379"
+    command: redis-server --replicaof redis-master 6379 --appendonly yes
     depends_on:
-      - postgres-primario
-    volumes:
-      - replica_data:/var/lib/postgresql/data
-    entrypoint: |
-      bash -c "
-      if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
-        echo 'Clonando base de datos principal...'
-        until pg_basebackup -h postgres-primario -D /var/lib/postgresql/data -U alan -v -P -R -X stream; do
-          echo 'Esperando al nodo primario...'
-          sleep 1
-        done
-      fi
-      exec docker-entrypoint.sh postgres
-      "
-
+      - redis-master
 # --- INSTANCIAS DE LA APLICACIÓN EN RUST ---
 
   app-node-1:
@@ -56,14 +28,12 @@ services:
       - "50052:50051" # Puerto para comunicación entre nodos
     environment:
       - PEER_ID=1
-      - DATABASE_LEADER_URL=postgres://alan:password@postgres-primario:5432/comida_db
-      - DATABASE_FOLLOWER_URL=postgres://alan:password@postgres-replica:5432/comida_db
+      - DATABASE_LEADER_URL=redis://redis-master:6379
+      - DATABASE_FOLLOWER_URL=redis://redis-replica:6379
       - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
-    volumes:
-      - ./migrations:/app/migrations
     depends_on:
-      - postgres-primario
-      - postgres-replica
+      - redis-master
+      - redis-replica
 
   app-node-2:
     build:
@@ -75,14 +45,12 @@ services:
       - "50053:50051" # Puerto para comunicación entre nodos
     environment:
       - PEER_ID=2
-      - DATABASE_LEADER_URL=postgres://alan:password@postgres-primario:5432/comida_db
-      - DATABASE_FOLLOWER_URL=postgres://alan:password@postgres-replica:5432/comida_db
+      - DATABASE_LEADER_URL=redis://redis-master:6379
+      - DATABASE_FOLLOWER_URL=redis://redis-replica:6379
       - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
-    volumes:
-      - ./migrations:/app/migrations
     depends_on:
-      - postgres-primario
-      - postgres-replica
+      - redis-master
+      - redis-replica
 
   app-node-3:
     build:
@@ -94,14 +62,12 @@ services:
       - "50054:50051" # Puerto para comunicación entre nodos
     environment:
       - PEER_ID=3
-      - DATABASE_LEADER_URL=postgres://alan:password@postgres-primario:5432/comida_db
-      - DATABASE_FOLLOWER_URL=postgres://alan:password@postgres-replica:5432/comida_db
+      - DATABASE_LEADER_URL=redis://redis-master:6379
+      - DATABASE_FOLLOWER_URL=redis://redis-replica:6379
       - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
-    volumes:
-      - ./migrations:/app/migrations
     depends_on:
-      - postgres-primario
-      - postgres-replica
+      - redis-master
+      - redis-replica
 
 volumes:
   primario_data:

@@ -138,7 +138,7 @@ impl ClientServer {
                 });
                 match client.send_heartbeat(request).await {
                     Ok(response) => {
-                        println!("Received heartbeat response from leader {}: {:?}", self.leader_id.unwrap_or(0), response.into_inner().message);
+                        //println!("Received heartbeat response from leader {}: {:?}", self.leader_id.unwrap_or(0), response.into_inner().message);
                         return Ok(())
                     },
                     Err(e) => {

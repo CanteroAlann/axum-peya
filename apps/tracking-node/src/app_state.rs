@@ -1,8 +1,9 @@
-use crate::infrastructure::postgres_db::Database;
 use dotenvy::dotenv;
-use sqlx::pool;
 use std::collections::HashMap;
 use std::env;
+use crate::repositories::geolocable_repository::GeoRepository;
+use crate::repositories::factory_repositories::Factory;
+use crate::infrastructure::redis_factory::RedisFactory;
 
 // The Config struct holds the configuration for the application,
 // including peer ID, database URLs, and cluster nodes.
@@ -46,18 +47,22 @@ impl Config {
 
 pub struct AppState {
     is_leader: bool,
-    pool_to_leader: Database,
-    pool_to_follower: Database,
+    pool_to_leader: GeoRepository,
+    pool_to_follower: GeoRepository,
     config: Config,
 }
 
 impl AppState {
-    pub async fn new(is_leader: bool) -> Self {
+    pub async fn new() -> Self {
         let config = Config::from_env();
-        let pool_to_leader = Database::new(&config.database_leader_url).await.unwrap();
-        let pool_to_follower = Database::new(&config.database_follower_url).await.unwrap();
+        let repository_factory: Factory = Box::new(RedisFactory::new(
+            config.database_leader_url.clone(),
+            config.database_follower_url.clone(),
+        ));
+        let pool_to_leader = repository_factory.create_leader_repository().await.unwrap();
+        let pool_to_follower = repository_factory.create_follower_repository().await.unwrap();
         Self {
-            is_leader: is_leader,
+            is_leader: false,
             pool_to_leader,
             pool_to_follower,
             config,
@@ -75,7 +80,7 @@ impl AppState {
     pub fn get_peer_id(&self) -> u32 {
         self.config.peer_id
     }
-    pub fn get_database(&self) -> &Database {
+    pub fn get_database(&self) -> &GeoRepository {
         if self.is_leader {
             &self.pool_to_leader
         } else {

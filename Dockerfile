@@ -7,8 +7,6 @@ COPY Cargo.toml Cargo.lock build.rs ./
  
 COPY proto ./proto 
 
-COPY migrations ./migrations
-
 COPY src ./src
 
 RUN cargo build --release

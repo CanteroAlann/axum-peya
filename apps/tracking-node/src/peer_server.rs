@@ -19,7 +19,7 @@ struct PeerServer{
 
 impl ElectionService for PeerServer{
     async fn send_heartbeat(&self, request: TonicRequest<Heartbeat>) -> Result<TonicResponse<Ack>, Status> {
-        println!("Received heart beat from {:?}", request.remote_addr());
+        //println!("Received heart beat from {:?}", request.remote_addr());
         let response = Ack {
             message: "OK".to_string(),
         };

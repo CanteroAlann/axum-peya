@@ -12,8 +12,7 @@ pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + S
 
 #[tokio::main]
 async fn main() {
-
-    let app_data = app_state::AppState::new(false).await;
+    let app_data = app_state::AppState::new().await;
     let (server_tx, server_rx) = mpsc::channel::<u32>(100);
     let mut client_server = peer_client::ClientServer::new(
         app_data.get_peers_connections(),
