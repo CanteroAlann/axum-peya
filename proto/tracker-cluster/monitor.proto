@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package monitor;
+
+service MonitorService {
+  rpc CheckRole (Empty) returns (RoleResponse);
+}
+
+message Empty {}
+
+enum NodeRole {
+  FOLLOWER = 0;
+  LEADER = 1;
+  UNKNOWN = 2;
+}
+
+message RoleResponse {
+  NodeRole role = 1;
+  uint32 peer_id = 2;
+}

@@ -1,19 +1,19 @@
 use axum::{routing::get, Router, extract::State};
 use std::net::SocketAddr;
 use crate::app_state::AppState;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 async fn hello() -> &'static str {
     "Hello world from axum!"
 }
 
 async fn hello_with_name(
-    State(app_state): State<Arc<Mutex<AppState>>>, 
+    State(app_state): State<Arc<RwLock<AppState>>>, 
     name: String
 ) -> String {
     
     let db = {
-        let state = app_state.lock().unwrap();
+        let state = app_state.read().unwrap();
         state.get_database().clone() 
     };
 
@@ -30,7 +30,7 @@ async fn hello_with_name(
     format!("Hello, {}!", name)
 }
 
-pub async fn start_web_server(app_state: Arc<Mutex<AppState>>) {
+pub async fn start_web_server(app_state: Arc<RwLock<AppState>>) {
     let app = Router::new()
         .route("/", get(hello))
         .route("/hello/:name", get(hello_with_name))

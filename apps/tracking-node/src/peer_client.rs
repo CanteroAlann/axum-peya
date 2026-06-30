@@ -3,7 +3,7 @@ pub mod replicaprotocol{
 }
 use replicaprotocol::election_service_client::ElectionServiceClient;
 use replicaprotocol::Election;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use crate::app_state::AppState;
 use tokio::sync::mpsc;
 
@@ -43,7 +43,7 @@ impl ClientServer {
 
     pub async fn start(
         &mut self, 
-        app_state: Arc<Mutex<AppState>>,
+        app_state: Arc<RwLock<AppState>>,
         mut server_rx: mpsc::Receiver<u32>
 
     ) -> Result<()> {
@@ -59,7 +59,7 @@ impl ClientServer {
                     println!("Client received leader update event. New leader is: {}", new_leader);
                     self.leader_id = Some(new_leader);
                     
-                    let mut state = app_state.lock().unwrap();
+                    let mut state = app_state.write().unwrap();
                     if new_leader != self.peer_id {
                         state.become_follower();
                     }
@@ -85,7 +85,7 @@ impl ClientServer {
     // If no higher-ID node responds, it declares itself the leader 
     // and sends a coordinator message to all nodes.
 
-    async fn start_election(&mut self, app_state: Arc<Mutex<AppState>>) -> Result<()> {
+    async fn start_election(&mut self, app_state: Arc<RwLock<AppState>>) -> Result<()> {
         let mut retries = 0;
         while retries < 3 {
             for (node_id, client) in &mut self.clients {
@@ -109,7 +109,7 @@ impl ClientServer {
         }
         self.leader_id = Some(self.peer_id);
         self.send_coordinator().await?;
-        app_state.lock().unwrap().become_leader();
+        app_state.write().unwrap().become_leader();
         println!("Node {} has become the leader.", self.peer_id);
         Ok(())
     }

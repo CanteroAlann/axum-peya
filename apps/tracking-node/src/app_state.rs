@@ -7,6 +7,7 @@ use crate::infrastructure::redis_factory::RedisFactory;
 
 // The Config struct holds the configuration for the application,
 // including peer ID, database URLs, and cluster nodes.
+#[derive(Debug, Clone)]
 struct Config {
     pub peer_id: u32,
     pub database_leader_url: String,
@@ -42,11 +43,17 @@ impl Config {
 }
 
 // The AppState struct holds the state of the application,
-// it manages whether the current node is a leader or a follower
+// it manages whether the current node is a leader,follower or an unknown state,
 // updating database connection and configuration using events.
+#[derive(Debug)]
+enum NodeState {
+    Leader,
+    Follower,
+    Unknown,
+}
 
 pub struct AppState {
-    is_leader: bool,
+    state: NodeState,
     pool_to_leader: GeoRepository,
     pool_to_follower: GeoRepository,
     config: Config,
@@ -62,17 +69,21 @@ impl AppState {
         let pool_to_leader = repository_factory.create_leader_repository().await.unwrap();
         let pool_to_follower = repository_factory.create_follower_repository().await.unwrap();
         Self {
-            is_leader: false,
+            state: NodeState::Unknown,
             pool_to_leader,
             pool_to_follower,
             config,
         }
     }
     pub fn become_leader(&mut self) {
-        self.is_leader = true;
+        self.state = NodeState::Leader;
     }
     pub fn become_follower(&mut self) {
-        self.is_leader = false;
+        self.state = NodeState::Follower;
+    }
+
+    pub fn is_leader(&self) -> bool {
+        matches!(self.state, NodeState::Leader)
     }
     pub fn get_peers_connections(&self) -> &HashMap<u32, String> {
         &self.config.cluster_nodes
@@ -81,10 +92,10 @@ impl AppState {
         self.config.peer_id
     }
     pub fn get_database(&self) -> &GeoRepository {
-        if self.is_leader {
-            &self.pool_to_leader
-        } else {
-            &self.pool_to_follower
+        match self.state {
+            NodeState::Leader => &self.pool_to_leader,
+            NodeState::Follower => &self.pool_to_follower,
+            NodeState::Unknown => panic!("Node state is unknown, cannot get database connection"),
         }
-    }
+    }   
 }

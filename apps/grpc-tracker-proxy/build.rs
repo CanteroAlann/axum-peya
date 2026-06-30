@@ -1,6 +1,5 @@
 fn main() {
     let protos = [
-        "../../proto/tracker-cluster/replica-protocol.proto",
         "../../proto/tracker-cluster/monitor.proto",
         "../../proto/tracker/tracker-service.proto",
     ];

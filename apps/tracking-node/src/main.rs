@@ -5,7 +5,7 @@ mod infrastructure;
 mod repositories;
 mod entities;
 mod app_state;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -17,7 +17,7 @@ async fn main() {
     let mut client_server = peer_client::ClientServer::new(
         app_data.get_peers_connections(),
         app_data.get_peer_id()).await;
-    let app_state = Arc::new(Mutex::new(app_data)); 
+    let app_state = Arc::new(RwLock::new(app_data)); 
     let app_state_to_web = app_state.clone();
     let web_server_handle = tokio::spawn(async move  {
         web_server::start_web_server(app_state_to_web.clone()).await;

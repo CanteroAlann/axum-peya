@@ -1,24 +1,33 @@
 pub mod replicaprotocol{
     tonic::include_proto!("replica_protocol");
 }
+
+pub mod monitor{
+    tonic::include_proto!("monitor");
+}
+
 use std::net::SocketAddr;
+use crate::app_state::AppState;
+use monitor::monitor_service_server::{MonitorService, MonitorServiceServer};
+use monitor::{Empty,RoleResponse};
 use replicaprotocol::election_service_server::{ElectionService, ElectionServiceServer};
 use replicaprotocol::{Ack, Heartbeat};
 use tonic::{transport::Server, Request as TonicRequest, Response as TonicResponse, Status};
 use tokio::sync::mpsc;
-use std::sync::{Arc, Mutex};
-use crate::app_state::AppState;
+use std::sync::{Arc, RwLock};
 
-#[derive(Debug)]
 struct PeerServer{
-    id : u32,
     server_tx : mpsc::Sender<u32>,
+}
+
+struct MonitorServer {
+    state: Arc<RwLock<AppState>>,
 }
 
 #[tonic::async_trait]
 
 impl ElectionService for PeerServer{
-    async fn send_heartbeat(&self, request: TonicRequest<Heartbeat>) -> Result<TonicResponse<Ack>, Status> {
+    async fn send_heartbeat(&self,_request: TonicRequest<Heartbeat>) -> Result<TonicResponse<Ack>, Status> {
         //println!("Received heart beat from {:?}", request.remote_addr());
         let response = Ack {
             message: "OK".to_string(),
@@ -44,13 +53,32 @@ impl ElectionService for PeerServer{
     }
 }
 
-pub async fn start_peer_server(app_state: Arc<Mutex<AppState>>, server_tx: mpsc::Sender<u32>) -> Result<(), Box<dyn std::error::Error>> {
-    let id = app_state.lock().unwrap().get_peer_id();
-    let peer_server = PeerServer { id, server_tx };
+#[tonic::async_trait]
+
+impl MonitorService for MonitorServer{
+    async fn check_role(&self, request: TonicRequest<Empty>) -> Result<TonicResponse<RoleResponse>, Status> {
+        println!("Received role check from {:?}", request.remote_addr());
+        let response = RoleResponse {
+            peer_id: self.state.read().unwrap().get_peer_id(),
+            role: if self.state.read().unwrap().is_leader() {
+                0 // LEADER
+            } else {
+                1 // FOLLOWER
+            },
+        };
+        Ok(TonicResponse::new(response))
+    }
+}
+
+
+pub async fn start_peer_server(app_state: Arc<RwLock<AppState>>, server_tx: mpsc::Sender<u32>) -> Result<(), Box<dyn std::error::Error>> {
+    let peer_server = PeerServer { server_tx };
+    let state_for_monitor = app_state.clone();
+    let monitor_server = MonitorServer { state: state_for_monitor };
     let addr = SocketAddr::from(([0, 0, 0, 0], 50051));
-    println!("Peer server {} listening on {}", id, addr);
     Server::builder()
         .add_service(ElectionServiceServer::new(peer_server))
+        .add_service(MonitorServiceServer::new(monitor_server))
         .serve(addr)
         .await?;
     Ok(())
