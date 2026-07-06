@@ -16,12 +16,27 @@ services:
     command: redis-server --replicaof redis-master 6379 --appendonly yes
     depends_on:
       - redis-master
+
+# --- REVERSE PROXY INTELIGENTE (Punto único de entrada gRPC) ---
+  grpc-proxy:
+    build:
+      context: .
+      dockerfile: apps/grpc-tracker-proxy/Dockerfile
+    container_name: grpc_internal_proxy
+    ports:
+      - "5050:5050" # Tus microservicios externos le pegan a este puerto
+    depends_on:
+      - app-node-1
+      - app-node-2
+      - app-node-3
+
+
 # --- INSTANCIAS DE LA APLICACIÓN EN RUST ---
 
   app-node-1:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: apps/tracking-node/Dockerfile
     container_name: rust_app_node_1
     ports:
       - "3001:3000"
@@ -38,7 +53,7 @@ services:
   app-node-2:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: apps/tracking-node/Dockerfile
     container_name: rust_app_node_2
     ports:
       - "3002:3000"
@@ -55,7 +70,7 @@ services:
   app-node-3:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: apps/tracking-node/Dockerfile
     container_name: rust_app_node_3
     ports:
       - "3003:3000"

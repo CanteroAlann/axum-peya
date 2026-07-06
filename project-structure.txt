@@ -1,28 +1,40 @@
 .
-├── build.rs
+├── apps
+│   ├── grpc-tracker-proxy
+│   │   ├── build.rs
+│   │   ├── Cargo.toml
+│   │   ├── Dockerfile
+│   │   └── src
+│   └── tracking-node
+│       ├── build.rs
+│       ├── Cargo.toml
+│       ├── Dockerfile
+│       ├── migrations
+│       └── src
 ├── Cargo.lock
 ├── Cargo.toml
 ├── docker-compose.yaml
-├── Dockerfile
-├── migrations
-│   └── 20260612002847_initial_squema.sql
 ├── project-structure.txt
 ├── proto
-│   └── replica-protocol.proto
+│   ├── tracker
+│   │   └── tracker-service.proto
+│   └── tracker-cluster
+│       ├── monitor.proto
+│       └── replica-protocol.proto
 ├── README.md
-├── src
-│   ├── app_state.rs
-│   ├── entities.rs
-│   ├── infrastructure
-│   ├── main.rs
-│   ├── mod.rs
-│   ├── peer_client.rs
-│   ├── peer_server.rs
-│   ├── repositories
-│   └── web_server.rs
 └── target
     ├── CACHEDIR.TAG
     ├── debug
+    │   ├── build
+    │   ├── deps
+    │   ├── examples
+    │   ├── grpc-proxy
+    │   ├── grpc-proxy.d
+    │   ├── incremental
+    │   ├── web-app
+    │   └── web-app.d
     └── flycheck0
+        ├── stderr
+        └── stdout
 
-9 directories, 17 files
+17 directories, 21 files

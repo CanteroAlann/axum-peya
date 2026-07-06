@@ -3,13 +3,9 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
-COPY Cargo.toml Cargo.lock build.rs ./
- 
-COPY proto ./proto 
+COPY . .
 
-COPY src ./src
-
-RUN cargo build --release
+RUN cargo build --release --package web-app
 
 # --- ETAPA DE PRODUCCIÓN ---
 FROM debian:bookworm-slim
