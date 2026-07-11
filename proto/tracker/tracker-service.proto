@@ -8,16 +8,6 @@ service TrackingService {
   rpc GetNearbyRestaurants (NearbyRequest) returns (NearbyResponse);
 }
 
-enum NodeRole {
-  FOLLOWER = 0;
-  LEADER = 1;
-}
-
-message RoleResponse {
-  NodeRole role = 1;
-  uint32 peer_id = 2;
-}
-
 message RestaurantLocationRequest {
   uint32 id = 1;
   double latitude = 2;

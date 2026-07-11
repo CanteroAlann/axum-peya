@@ -1,5 +1,5 @@
 services:
-  # --- REDIS MASTER (Para escrituras del líder) ---
+  # --- REDIS (Igual que antes) ---
   redis-master:
     image: redis:7-alpine
     container_name: redis_master
@@ -7,7 +7,6 @@ services:
       - "6379:6379"
     command: redis-server --appendonly yes
 
-  # --- REDIS REPLICA (Para lecturas de cualquier nodo) ---
   redis-replica:
     image: redis:7-alpine
     container_name: redis_replica
@@ -17,73 +16,87 @@ services:
     depends_on:
       - redis-master
 
-# --- REVERSE PROXY INTELIGENTE (Punto único de entrada gRPC) ---
+  # --- REVERSE PROXY ---
   grpc-proxy:
     build:
       context: .
-      dockerfile: apps/grpc-tracker-proxy/Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: grpc_internal_proxy
     ports:
-      - "5050:5050" # Tus microservicios externos le pegan a este puerto
+      - "5050:5050"
+    volumes:
+      - /home/alan/rust-project/axum-peya:/app
+    environment:
+      - CARGO_TARGET_DIR=/app/.target_docker/proxy
+    command: ["cargo", "watch", "-i", "target/*", "-i", ".target_docker/*", "-x", "run --package grpc-tracker-proxy"]
     depends_on:
       - app-node-1
       - app-node-2
       - app-node-3
 
-
-# --- INSTANCIAS DE LA APLICACIÓN EN RUST ---
-
+  # --- EL COMPILADOR PRINCIPAL (NODO 1) ---
   app-node-1:
     build:
       context: .
-      dockerfile: apps/tracking-node/Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: rust_app_node_1
     ports:
       - "3001:3000"
-      - "50052:50051" # Puerto para comunicación entre nodos
+      - "50052:50051"
     environment:
       - PEER_ID=1
       - DATABASE_LEADER_URL=redis://redis-master:6379
       - DATABASE_FOLLOWER_URL=redis://redis-replica:6379
       - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
+      - CARGO_TARGET_DIR=/app/.target_docker/shared-nodes
+    volumes:
+      - /home/alan/rust-project/axum-peya:/app
+    # Ya no necesita disparar comandos post-shell, solo compila y corre su instancia
+    command: ["cargo-watch", "-i", "target/*", "-i", ".target_docker/*", "-x", "run --package tracker-node"]
     depends_on:
       - redis-master
       - redis-replica
 
+  # --- REPLICA 2 (Hot Reload automático vigilando el binario) ---
   app-node-2:
     build:
       context: .
-      dockerfile: apps/tracking-node/Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: rust_app_node_2
     ports:
       - "3002:3000"
-      - "50053:50051" # Puerto para comunicación entre nodos
+      - "50053:50051"
     environment:
       - PEER_ID=2
       - DATABASE_LEADER_URL=redis://redis-master:6379
       - DATABASE_FOLLOWER_URL=redis://redis-replica:6379
       - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
+    volumes:
+      - /home/alan/rust-project/axum-peya:/app
+    # nodemon vigila el binario compartido. Si cambia, mata el proceso viejo y ejecuta el nuevo al instante.
+    command: ["nodemon", "--watch", "/app/.target_docker/shared-nodes/debug/tracker-node", "--exec", "/app/.target_docker/shared-nodes/debug/tracker-node"]
     depends_on:
-      - redis-master
-      - redis-replica
+      - app-node-1
 
+  # --- REPLICA 3 (Hot Reload automático vigilando el binario) ---
   app-node-3:
     build:
       context: .
-      dockerfile: apps/tracking-node/Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: rust_app_node_3
     ports:
       - "3003:3000"
-      - "50054:50051" # Puerto para comunicación entre nodos
+      - "50054:50051"
     environment:
       - PEER_ID=3
       - DATABASE_LEADER_URL=redis://redis-master:6379
       - DATABASE_FOLLOWER_URL=redis://redis-replica:6379
       - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
+    volumes:
+      - /home/alan/rust-project/axum-peya:/app
+    command: ["nodemon", "--watch", "/app/.target_docker/shared-nodes/debug/tracker-node", "--exec", "/app/.target_docker/shared-nodes/debug/tracker-node"]
     depends_on:
-      - redis-master
-      - redis-replica
-
+      - app-node-1
 volumes:
   primario_data:
   replica_data:

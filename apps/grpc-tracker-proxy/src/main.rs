@@ -19,6 +19,7 @@ use proto::tracker::{
 use tonic::{transport::{Channel, Endpoint}, Request, Response, Status};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use std::net::SocketAddr;
 
 struct ProxyState {
     // Almacenamos los clientes ya conectados de manera permanente
@@ -109,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Spawneamos el hilo de fondo encargado del Smart Routing dinámico
     tokio::spawn(monitor_cluster_roles(state.clone(), node_urls));
 
-    let addr = "[0.0.0.0]:5050".parse()?;
+    let addr = SocketAddr::from(([0, 0, 0, 0], 5000));
     println!("🚀 gRPC Reverse Proxy corriendo en el puerto 5000...");
 
     tonic::transport::Server::builder()

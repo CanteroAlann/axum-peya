@@ -2282,6 +2282,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracker-node"
+version = "0.1.0"
+dependencies = [
+ "axum 0.7.9",
+ "dotenvy",
+ "geo-types",
+ "prost",
+ "redis",
+ "serde",
+ "sqlx",
+ "tokio",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "validator",
+]
+
+[[package]]
 name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2469,24 +2487,6 @@ dependencies = [
  "hashbrown 0.15.5",
  "indexmap",
  "semver",
-]
-
-[[package]]
-name = "web-app"
-version = "0.1.0"
-dependencies = [
- "axum 0.7.9",
- "dotenvy",
- "geo-types",
- "prost",
- "redis",
- "serde",
- "sqlx",
- "tokio",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
- "validator",
 ]
 
 [[package]]

@@ -1,18 +1,20 @@
 .
-├── apps
-│   ├── grpc-tracker-proxy
-│   │   ├── build.rs
-│   │   ├── Cargo.toml
-│   │   ├── Dockerfile
-│   │   └── src
-│   └── tracking-node
-│       ├── build.rs
-│       ├── Cargo.toml
-│       ├── Dockerfile
-│       ├── migrations
-│       └── src
 ├── Cargo.lock
 ├── Cargo.toml
+├── Dockerfile.dev
+├── README.md
+├── apps
+│   ├── grpc-tracker-proxy
+│   │   ├── Cargo.toml
+│   │   ├── Dockerfile
+│   │   ├── build.rs
+│   │   └── src
+│   └── tracking-node
+│       ├── Cargo.toml
+│       ├── Dockerfile
+│       ├── build.rs
+│       ├── migrations
+│       └── src
 ├── docker-compose.yaml
 ├── project-structure.txt
 ├── proto
@@ -21,20 +23,19 @@
 │   └── tracker-cluster
 │       ├── monitor.proto
 │       └── replica-protocol.proto
-├── README.md
 └── target
     ├── CACHEDIR.TAG
     ├── debug
     │   ├── build
     │   ├── deps
     │   ├── examples
-    │   ├── grpc-proxy
-    │   ├── grpc-proxy.d
+    │   ├── grpc-tracker-proxy
+    │   ├── grpc-tracker-proxy.d
     │   ├── incremental
-    │   ├── web-app
-    │   └── web-app.d
+    │   ├── tracker-node
+    │   └── tracker-node.d
     └── flycheck0
         ├── stderr
         └── stdout
 
-17 directories, 21 files
+17 directories, 22 files
