@@ -3,6 +3,7 @@ use crate::repositories::geolocable_repository::GeoRepository;
 use crate::infrastructure::redis_db::RedisDatabase;
 use std::error::Error;
 use std::sync::Arc;
+use async_trait::async_trait;
 
 pub struct RedisFactory {
     master_url: String,
@@ -15,7 +16,7 @@ impl RedisFactory {
     }
 }
 
-#[axum::async_trait]
+#[async_trait]
 impl RepositoryFactory for RedisFactory {
     async fn create_leader_repository(&self) -> Result<GeoRepository, Box<dyn Error + Send + Sync>> {
         let client = redis::Client::open(self.master_url.as_str())?;

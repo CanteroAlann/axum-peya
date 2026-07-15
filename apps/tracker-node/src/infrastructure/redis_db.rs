@@ -1,6 +1,7 @@
 use crate::repositories::geolocable_repository::GeocableRepository;
 use crate::entities::{Restaurant, Delivery};
 use std::error::Error;
+use async_trait::async_trait;
 
 #[derive(Clone)]
 pub struct RedisDatabase {
@@ -12,8 +13,7 @@ impl RedisDatabase {
         Self { client: connection }
     }
 }
-
-#[axum::async_trait]
+#[async_trait]
 impl GeocableRepository for RedisDatabase {
     async fn add_restaurant(&self, restaurant: Restaurant) -> Result<(), Box<dyn Error>> {
         let mut conn = self.client.clone();

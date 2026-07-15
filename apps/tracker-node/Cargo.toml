@@ -6,15 +6,12 @@ edition = "2021"
 [dependencies]
 tonic = "*"
 prost = "0.14"
-axum = "0.7"
 tokio = { version = "1.38", features = ["macros", "rt-multi-thread"] }
 tonic-prost = "0.14.6"
-sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls"] }
-geo-types = "0.7"
 serde = { version = "1.0", features = ["derive"] }
-validator = { version = "0.18", features = ["derive"] }
 dotenvy = "0.15.7"
 redis = { version = "0.27", features = ["aio", "tokio-comp"] }
+async-trait = "0.1.89"
 
 [build-dependencies]
 tonic-prost-build = "*"

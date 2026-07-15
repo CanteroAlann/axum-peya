@@ -57,7 +57,7 @@ impl ElectionService for PeerServer{
 
 impl MonitorService for MonitorServer{
     async fn check_role(&self, request: TonicRequest<Empty>) -> Result<TonicResponse<RoleResponse>, Status> {
-        println!("Received role check from {:?}", request.remote_addr());
+        //println!("Received role check from {:?}", request.remote_addr());
         let response = RoleResponse {
             peer_id: self.state.read().unwrap().get_peer_id(),
             role: if self.state.read().unwrap().is_leader() {

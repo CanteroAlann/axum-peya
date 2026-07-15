@@ -12,6 +12,7 @@ message RestaurantLocationRequest {
   uint32 id = 1;
   double latitude = 2;
   double longitude = 3;
+  string name = 4;
 }
 
 message NearbyRequest {

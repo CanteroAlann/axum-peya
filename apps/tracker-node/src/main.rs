@@ -1,4 +1,4 @@
-mod web_server;
+mod tracker_server;
 mod peer_server;
 mod peer_client;
 mod infrastructure;
@@ -20,7 +20,7 @@ async fn main() {
     let app_state = Arc::new(RwLock::new(app_data)); 
     let app_state_to_web = app_state.clone();
     let web_server_handle = tokio::spawn(async move  {
-        web_server::start_web_server(app_state_to_web.clone()).await;
+        tracker_server::start_tracker_server(app_state_to_web.clone()).await.unwrap();
     });
     let app_state_to_client = app_state.clone();
     let client_server_handle = tokio::spawn(async move {

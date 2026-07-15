@@ -21,17 +21,18 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::net::SocketAddr;
 
-struct ProxyState {
-    // Almacenamos los clientes ya conectados de manera permanente
-    leader_client: MonitorServiceClient<Channel>,
-    all_clients: Vec<MonitorServiceClient<Channel>>,
-}
-
 struct TrackerConnection {
     leader_client: TrackingServiceClient<Channel>,
     all_clients: Vec<TrackingServiceClient<Channel>>,
 }
 
+impl TrackerConnection{
+    fn update_leader(&mut self, leader_id: u32) {
+        self.leader_client = self.all_clients[leader_id as usize - 1].clone();
+    }
+}
+
+#[derive(Clone)]
 struct GrpcProxy {
     tracker: Arc<RwLock<TrackerConnection>>,
 }
@@ -43,6 +44,7 @@ impl TrackingService for GrpcProxy {
         &self,
         request: Request<RestaurantLocationRequest>,
     ) -> Result<Response<GenericResponse>, Status> {
+        println!("Routing write request to leader node...");
         let mut client = self.tracker.read().await.leader_client.clone();
         client.add_restaurant_location(request).await
     }
@@ -57,7 +59,7 @@ impl TrackingService for GrpcProxy {
     }
 }
 
-async fn monitor_cluster_roles(state: Arc<RwLock<ProxyState>>, nodes: Vec<String>) {
+async fn monitor_cluster_roles(state: Arc<RwLock<TrackerConnection>>, nodes: Vec<String>) {
     let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(2));
     loop {
         interval.tick().await;
@@ -67,8 +69,8 @@ async fn monitor_cluster_roles(state: Arc<RwLock<ProxyState>>, nodes: Vec<String
                     let role_info = response.into_inner();
                     // Si el nodo responde que es LEADER (enum == 0), actualizamos el puntero en memoria
                     if role_info.role == 0 {
-                        let mut state_write = state.write().await;
-                        state_write.leader_client = client;
+                        let mut tracker = state.write().await;
+                        tracker.update_leader(role_info.peer_id); // Assuming the first client is the new leader
                         break;
                     }
                 }
@@ -84,6 +86,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "http://app-node-2:50051".to_string(),
         "http://app-node-3:50051".to_string(),
     ];
+    let tracker_urls = vec![
+        "http://app-node-1:3000".to_string(),
+        "http://app-node-2:3000".to_string(),
+        "http://app-node-3:3000".to_string(),
+    ];
 
     // Inicializamos las conexiones lazy estables de gRPC
     let mut all_clients = Vec::new();
@@ -92,29 +99,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         all_clients.push(MonitorServiceClient::new(channel));
     }
     let mut all_tracker_clients = Vec::new();
-    for url in &node_urls {
+    for url in &tracker_urls {
         let channel = Endpoint::from_shared(url.clone())?.connect_lazy();
         all_tracker_clients.push(TrackingServiceClient::new(channel));
     }
 
-    // Por defecto, asumimos temporalmente al nodo 1 como líder inicial
-    let state = Arc::new(RwLock::new(ProxyState {
-        leader_client: all_clients[0].clone(),
-        all_clients: all_clients.clone(),
-    }));
     let tracker = Arc::new(RwLock::new(TrackerConnection {
         leader_client: all_tracker_clients[0].clone(),
         all_clients: all_tracker_clients.clone(),
     }));
 
-    // Spawneamos el hilo de fondo encargado del Smart Routing dinámico
-    tokio::spawn(monitor_cluster_roles(state.clone(), node_urls));
+    let grpc_proxy = GrpcProxy { tracker: tracker.clone() };
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 5000));
-    println!("🚀 gRPC Reverse Proxy corriendo en el puerto 5000...");
+    // Spawneamos el hilo de fondo encargado del Smart Routing dinámico
+    tokio::spawn(monitor_cluster_roles(tracker.clone(), node_urls));
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 5050));
+    println!("🚀 gRPC Reverse Proxy corriendo en el puerto 5050...");
 
     tonic::transport::Server::builder()
-        .add_service(TrackingServiceServer::new(GrpcProxy { tracker }))
+        .add_service(TrackingServiceServer::new(grpc_proxy))
         .serve(addr)
         .await?;
 
