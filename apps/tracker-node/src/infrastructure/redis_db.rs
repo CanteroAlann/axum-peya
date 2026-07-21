@@ -24,8 +24,6 @@ impl GeocableRepository for RedisDatabase {
     println!("🚀 Intentando escribir restaurant en Redis. Conexión info: {:?}", info);
 
 
-        
-        // Ejecutamos GEOADD de Redis de forma asincrónica
         let _:() =redis::cmd("GEOADD")
             .arg("restaurants")
             .arg(restaurant.longitude)
@@ -40,5 +38,28 @@ impl GeocableRepository for RedisDatabase {
     async fn add_delivery(&self, delivery: Delivery) -> Result<(), Box<dyn Error>> {
         // Tu lógica para agregar las coordenadas del Delivery en movimiento
         Ok(())
+    }
+
+    async fn get_nearby_restaurants(
+        &self,
+        longitude: f64,
+        latitude: f64,
+        radius_km: f64,
+    ) -> Result<Vec<String>, Box<dyn Error>> {
+        let mut conn = self.client.clone();
+
+        
+        let restaurant_ids: Vec<String> = redis::cmd("GEOSEARCH")
+            .arg("restaurants")
+            .arg("FROMLONLAT")
+            .arg(longitude)
+            .arg(latitude)
+            .arg("BYRADIUS")
+            .arg(radius_km)
+            .arg("km")
+            .query_async(&mut conn)
+            .await?;
+
+        Ok(restaurant_ids)
     }
 }

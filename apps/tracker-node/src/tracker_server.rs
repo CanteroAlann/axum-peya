@@ -35,12 +35,14 @@ impl TrackingService for TrackerServer{
         Ok(tonic::Response::new(response))
     }
 
-    async fn get_nearby_restaurants(&self, _request: tonic::Request<NearbyRequest>) -> Result<tonic::Response<tracker_server::NearbyResponse>, tonic::Status> {
-        // TODO: Implement logic to retrieve nearby restaurants based on the request parameters (e.g., latitude, longitude, radius)
-        let ids = Vec::new();
-         // Placeholder for actual restaurant IDs
+    async fn get_nearby_restaurants(&self, request: tonic::Request<NearbyRequest>) -> Result<tonic::Response<tracker_server::NearbyResponse>, tonic::Status> {
+        let req = request.into_inner();
+        let database = {self.app_state.read().unwrap().get_database().clone()};
+        let restaurant_ids = database.get_nearby_restaurants(req.longitude, req.latitude, req.radius_km).await.map_err(|e| {
+            tonic::Status::internal(format!("Failed to get nearby restaurants: {}", e))
+        })?;
         let response = NearbyResponse {
-            restaurant_ids: ids, // Placeholder for actual restaurant data
+            restaurant_ids: restaurant_ids,
         };
         Ok(tonic::Response::new(response))
     }
