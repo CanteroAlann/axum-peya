@@ -1,5 +1,5 @@
 services:
-  # --- REDIS (Igual que antes) ---
+  # --- REDIS ---
   redis-master:
     image: redis:7-alpine
     container_name: redis_master
@@ -15,6 +15,25 @@ services:
     command: redis-server --replicaof redis-master 6379 --appendonly yes
     depends_on:
       - redis-master
+
+
+  # --- RESTAURANT APP ---
+  restaurant-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: restaurant_app
+    ports:
+      - "3030:3000"
+    environment:
+      - TRACKER_SERVICE_URL=http://grpc_internal_proxy:5050
+      - CARGO_TARGET_DIR=/app/.target_docker/restaurant-app
+    depends_on:
+      - grpc-proxy
+    volumes:
+      - /home/alan/rust-project/axum-peya:/app
+    
+    command: ["cargo-watch", "-i", "target/*", "-i", ".target_docker/*", "-x", "run --package restaurant"]
 
   # --- REVERSE PROXY ---
   grpc-proxy:
@@ -51,13 +70,12 @@ services:
       - CARGO_TARGET_DIR=/app/.target_docker/shared-nodes
     volumes:
       - /home/alan/rust-project/axum-peya:/app
-    # Ya no necesita disparar comandos post-shell, solo compila y corre su instancia
     command: ["cargo-watch", "-i", "target/*", "-i", ".target_docker/*", "-x", "run --package tracker-node"]
     depends_on:
       - redis-master
       - redis-replica
 
-  # --- REPLICA 2 (Hot Reload automático vigilando el binario) ---
+  # --- REPLICA 2
   app-node-2:
     build:
       context: .
@@ -73,12 +91,12 @@ services:
       - CLUSTER_NODES=1=http://app-node-1:50051,2=http://app-node-2:50051,3=http://app-node-3:50051
     volumes:
       - /home/alan/rust-project/axum-peya:/app
-    # nodemon vigila el binario compartido. Si cambia, mata el proceso viejo y ejecuta el nuevo al instante.
+    
     command: ["nodemon", "--watch", "/app/.target_docker/shared-nodes/debug/tracker-node", "--exec", "/app/.target_docker/shared-nodes/debug/tracker-node"]
     depends_on:
       - app-node-1
 
-  # --- REPLICA 3 (Hot Reload automático vigilando el binario) ---
+  # --- REPLICA 3 
   app-node-3:
     build:
       context: .

@@ -1,6 +1,6 @@
 [workspace]
 members = [
     "apps/tracker-node",
-    "apps/grpc-tracker-proxy"
-]
+    "apps/grpc-tracker-proxy",
+    "apps/restaurant"]
 resolver = "2"

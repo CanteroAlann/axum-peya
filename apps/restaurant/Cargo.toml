@@ -1,0 +1,16 @@
+[package]
+name = "restaurant"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tonic = "*"
+prost = "0.14"
+tokio = { version = "1.38", features = ["macros", "rt-multi-thread"] }
+tonic-prost = "0.14.6"
+serde = { version = "1.0", features = ["derive"] }
+dotenvy = "0.15.7"
+async-trait = "0.1.89"
+
+[build-dependencies]
+tonic-prost-build = "*"
