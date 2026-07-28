@@ -1,0 +1,22 @@
+FROM golang:latest
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN go install github.com/air-verse/air@latest
+
+WORKDIR /app
+
+COPY apps/api-gateway/go.mod apps/api-gateway/go.sum ./apps/api-gateway/
+
+WORKDIR /app/apps/api-gateway
+RUN go mod download
+
+# Nos aseguramos de estar en la carpeta del Gateway
+WORKDIR /app/apps/api-gateway
+
+EXPOSE 8080
+
+# Ejecutamos air dentro de /app/apps/api-gateway
+CMD ["air"]

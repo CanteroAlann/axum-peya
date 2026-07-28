@@ -2,40 +2,22 @@
 ├── Cargo.lock
 ├── Cargo.toml
 ├── Dockerfile.dev
+├── Dockerfile.go.dev
 ├── README.md
 ├── apps
+│   ├── api-gateway
 │   ├── grpc-tracker-proxy
-│   │   ├── Cargo.toml
-│   │   ├── Dockerfile
-│   │   ├── build.rs
-│   │   └── src
-│   └── tracking-node
-│       ├── Cargo.toml
-│       ├── Dockerfile
-│       ├── build.rs
-│       ├── migrations
-│       └── src
+│   ├── restaurant
+│   └── tracker-node
 ├── docker-compose.yaml
 ├── project-structure.txt
 ├── proto
 │   ├── tracker
-│   │   └── tracker-service.proto
 │   └── tracker-cluster
-│       ├── monitor.proto
-│       └── replica-protocol.proto
-└── target
-    ├── CACHEDIR.TAG
-    ├── debug
-    │   ├── build
-    │   ├── deps
-    │   ├── examples
-    │   ├── grpc-tracker-proxy
-    │   ├── grpc-tracker-proxy.d
-    │   ├── incremental
-    │   ├── tracker-node
-    │   └── tracker-node.d
-    └── flycheck0
-        ├── stderr
-        └── stdout
+├── target
+│   ├── debug
+│   └── flycheck0
+└── tmp
+    └── build-errors.log
 
-17 directories, 22 files
+13 directories, 8 files

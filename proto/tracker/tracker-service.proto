@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package tracker;
 
+
+option go_package = "axum-peya/api-gateway/proto/tracker/tracker-service";
+
 service TrackingService {
   
   rpc AddRestaurantLocation (RestaurantLocationRequest) returns (GenericResponse);

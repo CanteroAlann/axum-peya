@@ -16,6 +16,25 @@ services:
     depends_on:
       - redis-master
 
+  # --- API GATEWAY ---
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.go.dev
+    container_name: go_api_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - GRPC_PROXY_URL=grpc_internal_proxy:5050
+      - RESTAURANT_APP_URL=restaurant_app:3000
+    volumes:
+      - /home/alan/rust-project/axum-peya:/app
+      - /app/apps/api-gateway/tmp
+    depends_on:
+      - grpc-proxy
+      - restaurant-app
+
 
   # --- RESTAURANT APP ---
   restaurant-app:
