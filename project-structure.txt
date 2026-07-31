@@ -6,18 +6,49 @@
 ├── README.md
 ├── apps
 │   ├── api-gateway
+│   │   ├── go.mod
+│   │   ├── go.sum
+│   │   ├── grpc_client.go
+│   │   ├── main.go
+│   │   ├── proto
+│   │   ├── tmp
+│   │   └── web_server.go
 │   ├── grpc-tracker-proxy
+│   │   ├── Cargo.toml
+│   │   ├── Dockerfile
+│   │   ├── build.rs
+│   │   └── src
 │   ├── restaurant
+│   │   ├── Cargo.toml
+│   │   ├── build.rs
+│   │   ├── config.rs
+│   │   └── src
 │   └── tracker-node
+│       ├── Cargo.toml
+│       ├── Dockerfile
+│       ├── build.rs
+│       ├── migrations
+│       └── src
 ├── docker-compose.yaml
 ├── project-structure.txt
 ├── proto
+│   ├── restaurant
+│   │   └── restaurant-service.proto
 │   ├── tracker
+│   │   └── tracker-service.proto
 │   └── tracker-cluster
+│       ├── monitor.proto
+│       └── replica-protocol.proto
 ├── target
 │   ├── debug
+│   │   ├── build
+│   │   ├── deps
+│   │   ├── examples
+│   │   └── incremental
 │   └── flycheck0
+│       ├── stderr
+│       └── stdout
 └── tmp
     └── build-errors.log
 
-13 directories, 8 files
+24 directories, 28 files

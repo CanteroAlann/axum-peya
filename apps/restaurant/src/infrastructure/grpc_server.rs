@@ -1,15 +1,14 @@
 // ./apps/grpc-proxy/src/main.rs
 pub mod proto {
-    pub mod tracker {
-        tonic::include_proto!("tracker");
+    pub mod restaurant {
+        tonic::include_proto!("restaurant");
     }
 }
 
-use proto::tracker::tracking_service_server::{TrackingService, TrackingServiceServer};
-use proto::tracker::{
-    RestaurantLocationRequest, GenericResponse,
-     NearbyRequest, NearbyResponse};
-use tonic::{transport::Server, Request, Response, Status};
+use proto::restaurant::restaurant_service_server::{RestaurantService, RestaurantServiceServer};
+use proto::restaurant::{
+    RestaurantRequest, GenericResponse};
+use tonic::{Request, Response, Status};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::net::SocketAddr;
@@ -22,16 +21,15 @@ struct GrpcServer {
 }
 
 #[tonic::async_trait]
-impl TrackingService for GrpcServer {
-    async fn add_restaurant_location(
+impl RestaurantService for GrpcServer {
+    async fn new_restaurant(
         &self,
-        request: Request<RestaurantLocationRequest>,
+        request: Request<RestaurantRequest>,
     ) -> Result<Response<GenericResponse>, Status> {
-        println!("Routing write request to leader node...");
         let client = {self.client.read().await};
         let restaurant_data = request.into_inner();
         let restaurant= crate::entities::Restaurant {
-            id: restaurant_data.id,
+            id: 1,
             name: restaurant_data.name,
             latitude: restaurant_data.latitude,
             longitude: restaurant_data.longitude,
@@ -43,21 +41,7 @@ impl TrackingService for GrpcServer {
             message: "Restaurant location added successfully".into(),
         }))
     }
-
-    // RUTA DE LECTURA -> Se puede balancear (aquí elegimos el primero de la lista para iniciar)
-    async fn get_nearby_restaurants(
-        &self,
-        request: Request<NearbyRequest>,
-    ) -> Result<Response<NearbyResponse>, Status> {
-        // Aquí se implementaría la lógica para obtener restaurantes cercanos
-        // Por simplicidad, devolvemos una respuesta vacía
-        Ok(Response::new(NearbyResponse {
-            restaurant_ids: vec![],
-        }))
-    }
 }
-
-
 
 
     pub async fn start_server(sender: Sender) -> Result<(), Box<dyn std::error::Error>> {
@@ -70,7 +54,7 @@ impl TrackingService for GrpcServer {
     println!("🚀 Restaurant service corriendo en el puerto 3000...");
 
     tonic::transport::Server::builder()
-        .add_service(TrackingServiceServer::new(grpc_server))
+        .add_service(RestaurantServiceServer::new(grpc_server))
         .serve(addr)
         .await?;
 

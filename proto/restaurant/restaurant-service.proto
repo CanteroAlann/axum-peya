@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package restaurant;
+
+option go_package = "axum-peya/api-gateway/proto/restaurant/restaurant-service";
+
+service RestaurantService {
+  
+  rpc NewRestaurant (RestaurantRequest) returns (GenericResponse);
+}
+
+message RestaurantRequest {
+  string name = 1;
+  string password = 2;
+  double latitude = 3;
+  double longitude = 4;
+}
+
+message GenericResponse {
+  bool success = 1;
+  string message = 2;
+}
