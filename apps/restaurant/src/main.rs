@@ -7,6 +7,7 @@ mod config;
 mod infrastructure;
 mod services;
 mod entities;
+mod repositories;
 
 
 #[tokio::main]

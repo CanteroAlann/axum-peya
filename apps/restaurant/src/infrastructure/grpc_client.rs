@@ -33,7 +33,7 @@ impl SenderFactory for GrpcClient {
 impl Senderable for GrpcClient {
     async fn send_restaurant_location(&self, message: Restaurant) -> Result<(), Box<dyn std::error::Error>> {
         let request = tonic::Request::new(proto::tracker::RestaurantLocationRequest {
-            id: message.id,
+            id: 0,
             name: message.name,
             latitude: message.latitude,
             longitude: message.longitude,

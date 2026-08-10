@@ -29,8 +29,9 @@ impl RestaurantService for GrpcServer {
         let client = {self.client.read().await};
         let restaurant_data = request.into_inner();
         let restaurant= crate::entities::Restaurant {
-            id: 1,
             name: restaurant_data.name,
+            address: restaurant_data.address,
+            password: restaurant_data.password,
             latitude: restaurant_data.latitude,
             longitude: restaurant_data.longitude,
         };

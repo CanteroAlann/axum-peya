@@ -11,9 +11,10 @@ service RestaurantService {
 
 message RestaurantRequest {
   string name = 1;
-  string password = 2;
-  double latitude = 3;
-  double longitude = 4;
+  string address = 2;
+  string password = 3;
+  double latitude = 4;
+  double longitude = 5;
 }
 
 message GenericResponse {
